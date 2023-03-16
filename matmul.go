@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+/* ******************************************************************************
+ * Seqential Matrix Multiplication C = A * B
+ * ******************************************************************************/
 func matmul_seq(A []int, B []int, C []int, N int) {
 
 	for y := 0; y < N; y++ {
@@ -22,6 +25,9 @@ func matmul_seq(A []int, B []int, C []int, N int) {
 	}
 }
 
+/* ******************************************************************************
+ * Seqential Matrix Multiplication C = A * B
+ * ******************************************************************************/
 func matmul_partial(A []int, B []int, C []int, N int, idx int, num_thread int) {
 
 	y_start := (N / num_thread) * idx
@@ -99,7 +105,6 @@ func main() {
 	/* ******************************************************************************
 	 * Check results
 	 * ******************************************************************************/
-
 	for y := 0; y < N; y++ {
 		for x := 0; x < N; x++ {
 			if C_seq[y*N+x] != C_par[y*N+x] {
@@ -110,7 +115,9 @@ func main() {
 	fmt.Print("Checking the results succeeded!!\n")
 }
 
-// Helper function
+/* ******************************************************************************
+ * Helper function
+ * ******************************************************************************/
 func print_matrix(C []int, N int) {
 	for y := 0; y < N; y++ {
 		for x := 0; x < N; x++ {
