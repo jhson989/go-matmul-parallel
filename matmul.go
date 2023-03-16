@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
+	"runtime"
+	"sync"
 )
 
-func matmul_seq(A []int, B []int, N int) []int {
-
-	C := make([]int, N*N)
+func matmul_seq(A []int, B []int, C []int, N int) {
 
 	for y := 0; y < N; y++ {
 		for x := 0; x < N; x++ {
@@ -18,20 +19,42 @@ func matmul_seq(A []int, B []int, N int) []int {
 			C[y*N+x] = sum
 		}
 	}
+}
 
-	return C
+func matmul_partial(A []int, B []int, C []int, N int, idx int, num_thread int) {
+
+	y_start := (N / num_thread) * idx
+	y_end := (N / num_thread) * (idx + 1)
+	if idx+1 == num_thread {
+		y_end = N
+	}
+
+	for y := y_start; y < y_end; y++ {
+		for x := 0; x < N; x++ {
+			sum := 0
+			for k := 0; k < N; k++ {
+				sum += A[y*N+k] * B[k*N+x]
+			}
+			C[y*N+x] = sum
+		}
+	}
 }
 
 func main() {
-
-	// Size of Matrices:(M*M)
+	/* ******************************************************************************
+	 * Configurate Matrices
+	 * ******************************************************************************/
 	var N int
 	fmt.Printf("Matrix Size: ")
 	fmt.Scanln(&N)
 
-	// Make arrays A, B, C
+	/* ******************************************************************************
+	 * Make arrays A, B, C
+	 * ******************************************************************************/
 	A := make([]int, N*N)
 	B := make([]int, N*N)
+	C_seq := make([]int, N*N)
+	C_par := make([]int, N*N)
 
 	for y := 0; y < N; y++ {
 		for x := 0; x < N; x++ {
@@ -40,20 +63,54 @@ func main() {
 		}
 	}
 
-	C := matmul_seq(A, B, N)
-	print_matrix(A, N)
-	print_matrix(B, N)
-	print_matrix(C, N)
+	/* ******************************************************************************
+	 * Run matmul squentially C = A * B
+	 * ******************************************************************************/
+	fmt.Printf("Sequential Matrix Multiplication started...\n")
+	matmul_seq(A, B, C_seq, N)
+
+	/* ******************************************************************************
+	 * Run matmul parallelly via all CPUs C = A * B
+	 * ******************************************************************************/
+	fmt.Printf("Parallel Matrix Multiplication started...\n")
+	num_thread := runtime.NumCPU()
+	if N < num_thread {
+		num_thread = N
+	}
+	runtime.GOMAXPROCS(num_thread)
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < num_thread; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			matmul_partial(A, B, C_par, N, i, num_thread)
+		}(i)
+	}
+	wg.Wait()
+
+	/* ******************************************************************************
+	 * Check results
+	 * ******************************************************************************/
+
+	for y := 0; y < N; y++ {
+		for x := 0; x < N; x++ {
+			if C_seq[y*N+x] != C_par[y*N+x] {
+				log.Fatalf("[ERROR] Checking the results failed at [%v,%v] (%v != %v)", y, x, C_seq[y*N+x], C_par[y*N+x])
+			}
+		}
+	}
+	fmt.Print("Checking the results succeeded!!\n")
 }
 
 // Helper function
 func print_matrix(C []int, N int) {
 	for y := 0; y < N; y++ {
 		for x := 0; x < N; x++ {
-			fmt.Printf("%d ", C[y*N+x])
+			fmt.Printf("%v ", C[y*N+x])
 		}
-		fmt.Printf("\n")
+		fmt.Print("\n")
 	}
-	fmt.Printf("\n")
+	fmt.Print("\n")
 
 }
