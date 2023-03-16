@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"runtime"
 	"sync"
+	"time"
 )
 
 func matmul_seq(A []int, B []int, C []int, N int) {
@@ -67,7 +68,10 @@ func main() {
 	 * Run matmul squentially C = A * B
 	 * ******************************************************************************/
 	fmt.Printf("Sequential Matrix Multiplication started...\n")
+	start_seq := time.Now()
 	matmul_seq(A, B, C_seq, N)
+	fmt.Printf(" - ended.\n")
+	fmt.Printf(" - elapsed time: %v\n", time.Since(start_seq))
 
 	/* ******************************************************************************
 	 * Run matmul parallelly via all CPUs C = A * B
@@ -79,6 +83,7 @@ func main() {
 	}
 	runtime.GOMAXPROCS(num_thread)
 
+	start_par := time.Now()
 	wg := sync.WaitGroup{}
 	for i := 0; i < num_thread; i++ {
 		wg.Add(1)
@@ -88,6 +93,8 @@ func main() {
 		}(i)
 	}
 	wg.Wait()
+	fmt.Printf(" - ended.\n")
+	fmt.Printf(" - elapsed time: %v\n", time.Since(start_par))
 
 	/* ******************************************************************************
 	 * Check results
